@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ems-postgres
+    environment:
+      POSTGRES_DB: ems_db
+      POSTGRES_USER: ems_user
+      POSTGRES_PASSWORD: ems_secure_password_2026
+    ports:
+      - "5435:5432"
+    volumes:
+      - ems_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ems_user -d ems_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ems_db
+      DB_USER: ems_user
+      DB_PASSWORD: ems_secure_password_2026
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8083:8083"
+
+volumes:
+  ems_pgdata:
